@@ -2,7 +2,7 @@
 
 A comprehensive web application for managing the cassava supply chain from farm to factory.
 
-![LMSC Dashboard](./public/dashboard-preview.png)
+
 
 ## Overview
 
@@ -73,10 +73,6 @@ Use these credentials to test the application:
 | Farmer      | farmer@cassava.com   | farmer123  |
 | Processor   | processor@cassava.com| processor123|
 | Transporter | transporter@cassava.com| transporter123|
-
-## Documentation
-
-For detailed documentation on the project setup, architecture, and usage, see [INSTRUCTIONS.txt](./INSTRUCTIONS.txt).
 
 ## License
 
