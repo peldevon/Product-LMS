@@ -19,10 +19,8 @@ LMSC is a Next.js-based platform that connects farmers, processors, and transpor
 
 ## Tech Stack
 
-- **Frontend**: Next.js 13 App Router, React, TailwindCSS
-- **UI Components**: shadcn/ui component library
+- **Frontend**: Next.js App Router, React, TailwindCSS
 - **Database**: SQLite with Drizzle ORM
-- **State Management**: React Context and Hooks
 - **Data Visualization**: Recharts
 
 ## Getting Started
