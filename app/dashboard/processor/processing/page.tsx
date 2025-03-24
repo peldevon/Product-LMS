@@ -1,380 +1,575 @@
 "use client"
 
-import type React from "react"
+import React, { useState, useEffect } from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
+import { ChevronRightIcon, LineChartIcon, PieChartIcon, ActivityIcon } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { DashboardHeader } from '@/components/header';
+import { DashboardShell } from '@/components/shell';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Slider } from '@/components/ui/slider';
+import { getRawMaterials, getProcessingBatches, getProcessingBatchById, updateProcessingBatch } from '@/app/actions/processing';
+import { toast } from '@/components/ui/use-toast';
 
-import { useState } from "react"
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-} from "recharts"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { processingData } from "@/lib/chart-data"
-
-// Sample processing batches
-const processingBatches = [
-  {
-    id: 1,
-    batchId: "PB-1001",
-    product: "Cassava Flour",
-    rawMaterial: "RM-1003",
-    quantity: 1200,
-    startDate: "2023-11-01",
-    endDate: "2023-11-03",
-    status: "In Progress",
-    progress: 65,
-  },
-  {
-    id: 2,
-    batchId: "PB-1002",
-    product: "Cassava Starch",
-    rawMaterial: "RM-0998",
-    quantity: 800,
-    startDate: "2023-10-30",
-    endDate: "2023-11-02",
-    status: "Completed",
-    progress: 100,
-  },
-  {
-    id: 3,
-    batchId: "PB-1003",
-    product: "Cassava Chips",
-    rawMaterial: "RM-0999",
-    quantity: 500,
-    startDate: "2023-10-29",
-    endDate: "2023-10-31",
-    status: "Completed",
-    progress: 100,
-  },
-  {
-    id: 4,
-    batchId: "PB-1004",
-    product: "Cassava Flour",
-    rawMaterial: "RM-1000",
-    quantity: 1000,
-    startDate: "2023-10-28",
-    endDate: "2023-10-30",
-    status: "Completed",
-    progress: 100,
-  },
-]
-
-// Sample completed batches
-const completedBatches = processingBatches.filter((batch) => batch.status === "Completed")
-const activeBatches = processingBatches.filter((batch) => batch.status === "In Progress")
-
-// Sample efficiency data
-const efficiencyData = [
-  { product: "Cassava Flour", efficiency: 85, output: 3200 },
-  { product: "Cassava Starch", efficiency: 78, output: 2400 },
-  { product: "Cassava Chips", efficiency: 92, output: 1800 },
-]
+type ProcessingBatch = {
+  id: number;
+  batchId: string;
+  product: string;
+  rawMaterial: string;
+  quantity: number;
+  startDate: string;
+  endDate: string;
+  status: 'In Progress' | 'Completed' | 'Canceled';
+  progress: number;
+};
 
 export default function ProcessorProcessingPage() {
-  const [showNewBatchForm, setShowNewBatchForm] = useState(false)
-  const [newBatch, setNewBatch] = useState({
-    product: "",
-    rawMaterial: "",
-    quantity: "",
-    startDate: "",
-    endDate: "",
-  })
+  const [processingBatches, setProcessingBatches] = useState<ProcessingBatch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showNewBatchForm, setShowNewBatchForm] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState<ProcessingBatch | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+  const [updateForm, setUpdateForm] = useState({
+    progress: 0,
+    status: 'In Progress' as 'In Progress' | 'Completed' | 'Canceled'
+  });
 
-  const handleNewBatchSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // In a real app, this would send data to an API
-    setShowNewBatchForm(false)
-    // Reset form
-    setNewBatch({
-      product: "",
-      rawMaterial: "",
-      quantity: "",
-      startDate: "",
-      endDate: "",
-    })
-    // Show success message
-    alert("New processing batch created successfully!")
-  }
+  // Fetch processing batches data
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const data = await getProcessingBatches();
+        setProcessingBatches(data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching processing batches:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load processing batches. Please try again.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, []);
+
+  // Handler for viewing batch details
+  const handleViewDetails = async (batch: ProcessingBatch) => {
+    try {
+      setLoading(true);
+      const details = await getProcessingBatchById(batch.id);
+      setSelectedBatch(details || null);
+      setShowDetailsDialog(true);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching batch details:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load batch details. Please try again.',
+        variant: 'destructive',
+      });
+      setLoading(false);
+    }
+  };
+
+  // Handler for opening update dialog
+  const handleOpenUpdateDialog = async (batch: ProcessingBatch) => {
+    try {
+      setLoading(true);
+      const details = await getProcessingBatchById(batch.id);
+      setSelectedBatch(details || null);
+      setUpdateForm({
+        progress: details?.progress || 0,
+        status: details?.status || 'In Progress'
+      });
+      setShowUpdateDialog(true);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching batch details for update:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load batch details. Please try again.',
+        variant: 'destructive',
+      });
+      setLoading(false);
+    }
+  };
+
+  // Handler for submitting update form
+  const handleUpdateSubmit = async () => {
+    if (!selectedBatch) return;
+    
+    try {
+      setLoading(true);
+      
+      // Update the processing batch
+      const updatedBatch = await updateProcessingBatch(
+        selectedBatch.id,
+        updateForm.progress,
+        updateForm.status
+      );
+      
+      // Update the local state
+      setProcessingBatches(prevBatches => 
+        prevBatches.map(batch => 
+          batch.id === selectedBatch.id 
+            ? updatedBatch 
+            : batch
+        )
+      );
+      
+      // Show success message
+      toast({
+        title: 'Batch Updated',
+        description: `Batch ${selectedBatch.batchId} has been updated.`,
+      });
+      
+      setShowUpdateDialog(false);
+      setSelectedBatch(null);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error updating batch:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update batch. Please try again.',
+        variant: 'destructive',
+      });
+      setLoading(false);
+    }
+  };
+
+  // Calculate stats for the dashboard
+  const totalActiveBatches = processingBatches.filter(batch => batch.status === 'In Progress').length;
+  const totalCompletedBatches = processingBatches.filter(batch => batch.status === 'Completed').length;
+  const totalQuantity = processingBatches.reduce((sum, batch) => sum + batch.quantity, 0);
+  
+  // Filter active and completed batches
+  const activeBatches = processingBatches.filter(batch => batch.status === 'In Progress');
+  const completedBatches = processingBatches.filter(batch => batch.status === 'Completed');
+  
+  // Prepare chart data
+  const statusChartData = [
+    { name: 'In Progress', value: totalActiveBatches, color: '#f59e0b' },
+    { name: 'Completed', value: totalCompletedBatches, color: '#10b981' },
+  ];
+
+  // Sample efficiency data
+  const efficiencyData = [
+    { name: 'Cassava Flour', efficiency: 92 },
+    { name: 'Cassava Starch', efficiency: 87 },
+    { name: 'Cassava Chips', efficiency: 95 },
+  ];
+
+  // Handler for new batch form submission
+  const handleNewBatchSubmit = () => {
+    // In a real app, this would create a new batch
+    toast({
+      title: "New Batch Created",
+      description: "Your new processing batch has been created.",
+    });
+    setShowNewBatchForm(false);
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Processing Operations</h1>
+    <DashboardShell>
+      <DashboardHeader heading="Processing Operations" text="Track and manage your processing operations.">
         <Button onClick={() => setShowNewBatchForm(!showNewBatchForm)}>
-          {showNewBatchForm ? "Cancel" : "New Processing Batch"}
+          {showNewBatchForm ? 'Cancel' : 'New Batch'}
         </Button>
-      </div>
+      </DashboardHeader>
 
       {showNewBatchForm && (
-        <Card>
+        <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Create New Processing Batch</CardTitle>
-            <CardDescription>Set up a new batch for processing</CardDescription>
+            <CardTitle>Start New Batch</CardTitle>
+            <CardDescription>Create a new processing batch</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleNewBatchSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="product">Product Type</Label>
-                  <Select
-                    value={newBatch.product}
-                    onValueChange={(value) => setNewBatch({ ...newBatch, product: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Cassava Flour">Cassava Flour</SelectItem>
-                      <SelectItem value="Cassava Starch">Cassava Starch</SelectItem>
-                      <SelectItem value="Cassava Chips">Cassava Chips</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="rawMaterial">Raw Material Batch</Label>
-                  <Select
-                    value={newBatch.rawMaterial}
-                    onValueChange={(value) => setNewBatch({ ...newBatch, rawMaterial: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select raw material batch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="RM-1001">RM-1001 (1500kg)</SelectItem>
-                      <SelectItem value="RM-1002">RM-1002 (2000kg)</SelectItem>
-                      <SelectItem value="RM-1004">RM-1004 (800kg)</SelectItem>
-                      <SelectItem value="RM-1005">RM-1005 (1000kg)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="quantity">Quantity (kg)</Label>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    value={newBatch.quantity}
-                    onChange={(e) => setNewBatch({ ...newBatch, quantity: e.target.value })}
-                    placeholder="e.g., 1000"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={newBatch.startDate}
-                    onChange={(e) => setNewBatch({ ...newBatch, startDate: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endDate">Expected End Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={newBatch.endDate}
-                    onChange={(e) => setNewBatch({ ...newBatch, endDate: e.target.value })}
-                    required
-                  />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="product-type">Product Type</Label>
+                <Select defaultValue="cassava-flour">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select product" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cassava-flour">Cassava Flour</SelectItem>
+                    <SelectItem value="cassava-starch">Cassava Starch</SelectItem>
+                    <SelectItem value="cassava-chips">Cassava Chips</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Button type="submit" className="w-full">
-                Create Processing Batch
-              </Button>
-            </form>
+              <div className="space-y-2">
+                <Label htmlFor="raw-material">Raw Material</Label>
+                <Select defaultValue="rm-1001">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select material" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="rm-1001">RM-1001 (Farm A)</SelectItem>
+                    <SelectItem value="rm-1002">RM-1002 (Farm B)</SelectItem>
+                    <SelectItem value="rm-1004">RM-1004 (Farm D)</SelectItem>
+                    <SelectItem value="rm-1005">RM-1005 (Farm A)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantity (kg)</Label>
+                <Input id="quantity" type="number" min="100" step="100" defaultValue="1000" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="end-date">End Date</Label>
+                <Input 
+                  id="end-date" 
+                  type="date" 
+                  defaultValue={new Date(new Date().setDate(new Date().getDate() + 3)).toISOString().split('T')[0]} 
+                />
+              </div>
+            </div>
           </CardContent>
+          <CardFooter>
+            <Button onClick={handleNewBatchSubmit}>
+              Start Batch
+            </Button>
+          </CardFooter>
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mb-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Processing Overview</CardTitle>
-            <CardDescription>Monthly input vs output (kg)</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Processing Overview</CardTitle>
+            <ActivityIcon className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
+            <div className="text-2xl font-bold">{totalActiveBatches + totalCompletedBatches} batches</div>
+            <p className="text-xs text-muted-foreground">
+              {totalActiveBatches} active · {totalCompletedBatches} completed
+            </p>
+            <div className="h-[120px] mt-4">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={processingData}
-                  margin={{
-                    top: 5,
-                    right: 30,
-                    left: 20,
-                    bottom: 5,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="input" stroke="#8884d8" name="Raw Material Input" />
-                  <Line type="monotone" dataKey="output" stroke="#10b981" name="Processed Output" />
-                </LineChart>
+                <PieChart>
+                  <Pie
+                    data={statusChartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={30}
+                    outerRadius={50}
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
+                  >
+                    {statusChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
+
         <Card>
-          <CardHeader>
-            <CardTitle>Processing Efficiency</CardTitle>
-            <CardDescription>Efficiency by product type</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Processing Efficiency</CardTitle>
+            <LineChartIcon className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
+            <div className="text-2xl font-bold">91.3%</div>
+            <p className="text-xs text-muted-foreground">
+              Average processing efficiency
+            </p>
+            <div className="h-[120px] mt-4">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={efficiencyData}
-                  margin={{
-                    top: 20,
-                    right: 30,
-                    left: 20,
-                    bottom: 5,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="product" />
-                  <YAxis />
-                  <Tooltip
-                    formatter={(value, name) => [
-                      name === "efficiency" ? `${value}%` : `${value} kg`,
-                      name === "efficiency" ? "Efficiency" : "Output",
-                    ]}
-                  />
-                  <Legend />
-                  <Bar dataKey="efficiency" fill="#10b981" name="Efficiency (%)" />
-                  <Bar dataKey="output" fill="#8884d8" name="Output (kg)" />
+                <BarChart data={efficiencyData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} horizontal={true} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} tickMargin={5} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} tickMargin={5} />
+                  <Tooltip />
+                  <Bar dataKey="efficiency" fill="#3b82f6" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Processing Volume</CardTitle>
+            <PieChartIcon className="w-4 h-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalQuantity} kg</div>
+            <p className="text-xs text-muted-foreground">
+              Total volume processed
+            </p>
+            <div className="h-[120px] mt-4 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-primary">{totalQuantity / 1000}</div>
+                <div className="text-xs text-muted-foreground">Metric Tons</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <Tabs defaultValue="active" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="active">Active Batches</TabsTrigger>
-          <TabsTrigger value="completed">Completed Batches</TabsTrigger>
-        </TabsList>
-        <TabsContent value="active">
-          <Card>
-            <CardHeader>
-              <CardTitle>Active Processing Batches</CardTitle>
-              <CardDescription>Currently active processing operations</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Batch ID</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Raw Material</TableHead>
-                    <TableHead>Quantity (kg)</TableHead>
-                    <TableHead>Start Date</TableHead>
-                    <TableHead>End Date</TableHead>
-                    <TableHead>Progress</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {activeBatches.map((batch) => (
-                    <TableRow key={batch.id}>
-                      <TableCell className="font-medium">{batch.batchId}</TableCell>
-                      <TableCell>{batch.product}</TableCell>
-                      <TableCell>{batch.rawMaterial}</TableCell>
-                      <TableCell>{batch.quantity}</TableCell>
-                      <TableCell>{batch.startDate}</TableCell>
-                      <TableCell>{batch.endDate}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-green-500 rounded-full"
-                              style={{ width: `${batch.progress}%` }}
-                            ></div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Processing Batches</CardTitle>
+          <CardDescription>
+            Manage all processing batches
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="active">
+            <TabsList>
+              <TabsTrigger value="active">Active Batches</TabsTrigger>
+              <TabsTrigger value="completed">Completed Batches</TabsTrigger>
+            </TabsList>
+            <TabsContent value="active">
+              {loading ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Batch ID</TableHead>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Raw Material</TableHead>
+                      <TableHead>Quantity (kg)</TableHead>
+                      <TableHead>Start Date</TableHead>
+                      <TableHead>End Date</TableHead>
+                      <TableHead>Progress</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {activeBatches.map((batch) => (
+                      <TableRow key={batch.id}>
+                        <TableCell className="font-medium">{batch.batchId}</TableCell>
+                        <TableCell>{batch.product}</TableCell>
+                        <TableCell>{batch.rawMaterial}</TableCell>
+                        <TableCell>{batch.quantity}</TableCell>
+                        <TableCell>{batch.startDate}</TableCell>
+                        <TableCell>{batch.endDate}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="bg-gray-200 w-24 h-2 rounded-full overflow-hidden">
+                              <div 
+                                className="bg-blue-500 h-full" 
+                                style={{ width: `${batch.progress}%` }}
+                              ></div>
+                            </div>
+                            <span>{batch.progress}%</span>
                           </div>
-                          <span className="text-xs">{batch.progress}%</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm">
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" onClick={() => handleViewDetails(batch)} className="text-blue-600 hover:text-blue-800 hover:bg-blue-100">
                             View
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => handleOpenUpdateDialog(batch)} className="text-amber-600 hover:text-amber-800 hover:bg-amber-100">
                             Update
                           </Button>
-                        </div>
-                      </TableCell>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </TabsContent>
+            <TabsContent value="completed">
+              {loading ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Batch ID</TableHead>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Raw Material</TableHead>
+                      <TableHead>Quantity (kg)</TableHead>
+                      <TableHead>Start Date</TableHead>
+                      <TableHead>End Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="completed">
-          <Card>
-            <CardHeader>
-              <CardTitle>Completed Processing Batches</CardTitle>
-              <CardDescription>Processing operations that have been completed</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Batch ID</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Raw Material</TableHead>
-                    <TableHead>Quantity (kg)</TableHead>
-                    <TableHead>Start Date</TableHead>
-                    <TableHead>End Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {completedBatches.map((batch) => (
-                    <TableRow key={batch.id}>
-                      <TableCell className="font-medium">{batch.batchId}</TableCell>
-                      <TableCell>{batch.product}</TableCell>
-                      <TableCell>{batch.rawMaterial}</TableCell>
-                      <TableCell>{batch.quantity}</TableCell>
-                      <TableCell>{batch.startDate}</TableCell>
-                      <TableCell>{batch.endDate}</TableCell>
-                      <TableCell>
-                        <Badge className="bg-green-500">{batch.status}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="outline" size="sm">
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+                  </TableHeader>
+                  <TableBody>
+                    {completedBatches.map((batch) => (
+                      <TableRow key={batch.id}>
+                        <TableCell className="font-medium">{batch.batchId}</TableCell>
+                        <TableCell>{batch.product}</TableCell>
+                        <TableCell>{batch.rawMaterial}</TableCell>
+                        <TableCell>{batch.quantity}</TableCell>
+                        <TableCell>{batch.startDate}</TableCell>
+                        <TableCell>{batch.endDate}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            {batch.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" onClick={() => handleViewDetails(batch)} className="text-blue-600 hover:text-blue-800 hover:bg-blue-100">
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Batch Details Dialog */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Batch Details</DialogTitle>
+            <DialogDescription>
+              Detailed information about the selected processing batch.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBatch && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Batch ID</Label>
+                <div className="col-span-3">{selectedBatch.batchId}</div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Product</Label>
+                <div className="col-span-3">{selectedBatch.product}</div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Raw Material</Label>
+                <div className="col-span-3">{selectedBatch.rawMaterial}</div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Quantity</Label>
+                <div className="col-span-3">{selectedBatch.quantity} kg</div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Start Date</Label>
+                <div className="col-span-3">{selectedBatch.startDate}</div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">End Date</Label>
+                <div className="col-span-3">{selectedBatch.endDate}</div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Status</Label>
+                <div className="col-span-3">
+                  <Badge variant={selectedBatch.status === 'Completed' ? 'outline' : 'secondary'} className={selectedBatch.status === 'Completed' ? 'bg-green-50 text-green-700 border-green-200' : ''}>
+                    {selectedBatch.status}
+                  </Badge>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Progress</Label>
+                <div className="col-span-3">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-gray-200 w-full h-2 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-blue-500 h-full" 
+                        style={{ width: `${selectedBatch.progress}%` }}
+                      ></div>
+                    </div>
+                    <span>{selectedBatch.progress}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setShowDetailsDialog(false)} className="bg-gray-500 hover:bg-gray-600">Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Batch Dialog */}
+      <Dialog open={showUpdateDialog} onOpenChange={setShowUpdateDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Update Batch</DialogTitle>
+            <DialogDescription>
+              Update the progress or status of this processing batch.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBatch && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Batch ID</Label>
+                <div className="col-span-3">{selectedBatch.batchId}</div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Product</Label>
+                <div className="col-span-3">{selectedBatch.product}</div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right" htmlFor="progress">Progress</Label>
+                <div className="col-span-3 space-y-2">
+                  <Slider 
+                    id="progress" 
+                    defaultValue={[updateForm.progress]} 
+                    max={100} 
+                    step={5}
+                    onValueChange={(value) => setUpdateForm({...updateForm, progress: value[0]})}
+                  />
+                  <div className="flex justify-between">
+                    <span>0%</span>
+                    <span>{updateForm.progress}%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right" htmlFor="status">Status</Label>
+                <Select 
+                  value={updateForm.status} 
+                  onValueChange={(value: 'In Progress' | 'Completed' | 'Canceled') => 
+                    setUpdateForm({...updateForm, status: value})
+                  }
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="In Progress">In Progress</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="Canceled">Canceled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowUpdateDialog(false)} className="text-gray-700 border-gray-300">Cancel</Button>
+            <Button onClick={handleUpdateSubmit} disabled={loading} className="bg-green-600 hover:bg-green-700">
+              {loading ? 'Updating...' : 'Update Batch'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </DashboardShell>
   )
 }
 

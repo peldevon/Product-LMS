@@ -271,14 +271,14 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">User Management</h1>
+        <h1 className="text-2xl font-bold">User Management</h1>
           <p className="text-muted-foreground">Manage user accounts across the platform</p>
         </div>
         <Button onClick={() => setShowAddUserForm(true)}>
           Add New User
         </Button>
       </div>
-      
+
       {/* Add User Dialog */}
       <Dialog open={showAddUserForm} onOpenChange={setShowAddUserForm}>
         <DialogContent className="sm:max-w-[500px]">
@@ -288,32 +288,32 @@ export default function AdminUsersPage() {
               Fill in the details to create a new user account
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleAddUser} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
+            <form onSubmit={handleAddUser} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
                 <Input id="name" name="name" placeholder="Full Name" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
                 <Input id="email" name="email" type="email" placeholder="email@cassava.com" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role</Label>
                 <Select name="role" defaultValue="Farmer">
-                  <SelectTrigger id="role">
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Admin">Admin</SelectItem>
-                    <SelectItem value="Farmer">Farmer</SelectItem>
-                    <SelectItem value="Processor">Processor</SelectItem>
-                    <SelectItem value="Transporter">Transporter</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                    <SelectTrigger id="role">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Admin">Admin</SelectItem>
+                      <SelectItem value="Farmer">Farmer</SelectItem>
+                      <SelectItem value="Processor">Processor</SelectItem>
+                      <SelectItem value="Transporter">Transporter</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
                 <Input id="password" name="password" type="password" placeholder="••••••••" required />
               </div>
             </div>
@@ -325,7 +325,7 @@ export default function AdminUsersPage() {
                 Add User
               </Button>
             </DialogFooter>
-          </form>
+            </form>
         </DialogContent>
       </Dialog>
       
@@ -369,11 +369,11 @@ export default function AdminUsersPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+      <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Roles Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
+        </CardHeader>
+        <CardContent>
             <div className="flex justify-around text-xs">
               <div className="text-center">
                 <div className="text-lg font-bold text-purple-500">{adminUsers.length}</div>
@@ -397,43 +397,43 @@ export default function AdminUsersPage() {
       </div>
       
       <div className="flex flex-col md:flex-row gap-4 pb-4">
-        <div className="flex-1">
+            <div className="flex-1">
           <div className="relative">
             <MagnifyingGlassIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name or email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              <Input
+                placeholder="Search by name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-8"
-            />
+              />
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All Roles</SelectItem>
-              <SelectItem value="Admin">Admin</SelectItem>
-              <SelectItem value="Farmer">Farmer</SelectItem>
-              <SelectItem value="Processor">Processor</SelectItem>
-              <SelectItem value="Transporter">Transporter</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All Status</SelectItem>
-              <SelectItem value="Active">Active</SelectItem>
-              <SelectItem value="Inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      
+            </div>
+            <div className="flex gap-2">
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Roles</SelectItem>
+                  <SelectItem value="Admin">Admin</SelectItem>
+                  <SelectItem value="Farmer">Farmer</SelectItem>
+                  <SelectItem value="Processor">Processor</SelectItem>
+                  <SelectItem value="Transporter">Transporter</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Status</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="w-full">
           <TabsTrigger value="all">All Users</TabsTrigger>
@@ -487,7 +487,7 @@ export default function AdminUsersPage() {
               </Button>
               <Button onClick={handleUpdateStatus}>
                 Save Changes
-              </Button>
+                          </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -542,10 +542,10 @@ export default function AdminUsersPage() {
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
                   Cancel
-                </Button>
+                          </Button>
                 <Button type="submit">
                   Save Changes
-                </Button>
+                          </Button>
               </DialogFooter>
             </form>
           </DialogContent>

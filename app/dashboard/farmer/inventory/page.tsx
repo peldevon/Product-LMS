@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog"
 import { Pencil, Trash } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
-import { updateInventoryQuantity, deleteInventoryEntry } from "@/app/actions/inventory"
+import { getInventory, updateInventoryQuantity, deleteInventoryEntry } from "@/app/actions/inventory"
 
 // Colors for the pie chart
 const COLORS = ["#00C49F", "#FFBB28", "#FF8042"]
@@ -45,15 +45,6 @@ type InventoryItem = {
   };
 };
 
-// Sample inventory data
-const inventoryItems = [
-  { id: 1, batch: "B-1001", quantity: 500, quality: "Grade A", harvestDate: "2023-10-15", status: "Available" },
-  { id: 2, batch: "B-1002", quantity: 750, quality: "Grade B", harvestDate: "2023-10-18", status: "Available" },
-  { id: 3, batch: "B-1003", quantity: 300, quality: "Grade A", harvestDate: "2023-10-20", status: "Reserved" },
-  { id: 4, batch: "B-1004", quantity: 900, quality: "Grade A", harvestDate: "2023-10-25", status: "Available" },
-  { id: 5, batch: "B-1005", quantity: 450, quality: "Grade C", harvestDate: "2023-10-28", status: "Available" },
-]
-
 export default function FarmerInventoryPage() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [newItem, setNewItem] = useState({
@@ -71,6 +62,43 @@ export default function FarmerInventoryPage() {
     quantity: 0
   })
 
+  // Fetch inventory data
+  useEffect(() => {
+    const fetchInventory = async () => {
+      setIsLoading(true);
+      try {
+        const data = await getInventory();
+        setInventory(data.map(item => ({
+          id: item.inventory.id,
+          productId: item.inventory.productId,
+          warehouseId: item.inventory.warehouseId,
+          quantity: item.inventory.quantity,
+          date: item.inventory.date,
+          product: {
+            name: item.product.name,
+            price: item.product.price,
+            category: item.product.category,
+          },
+          warehouse: {
+            name: item.warehouse.name,
+            location: item.warehouse.location,
+          }
+        })));
+      } catch (error) {
+        console.error("Failed to fetch inventory:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load inventory data",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchInventory();
+  }, []);
+
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault()
     // In a real app, this would send data to an API
@@ -83,7 +111,10 @@ export default function FarmerInventoryPage() {
       harvestDate: "",
     })
     // Show success message or update inventory
-    alert("Inventory item added successfully!")
+    toast({
+      title: "Success",
+      description: "Inventory item added successfully!",
+    });
   }
 
   const handleEditClick = (item: InventoryItem) => {
@@ -156,6 +187,24 @@ export default function FarmerInventoryPage() {
     }
   };
 
+  // Group inventory by product category for the chart
+  const categoryData = inventory.reduce((acc, item) => {
+    const category = item.product.category;
+    const existingCategory = acc.find(c => c.name === category);
+    
+    if (existingCategory) {
+      existingCategory.value += item.quantity;
+    } else {
+      acc.push({ name: category, value: item.quantity });
+    }
+    
+    return acc;
+  }, [] as { name: string; value: number }[]);
+
+  // Calculate inventory statistics
+  const totalItems = inventory.length;
+  const totalQuantity = inventory.reduce((sum, item) => sum + item.quantity, 0);
+  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -225,65 +274,107 @@ export default function FarmerInventoryPage() {
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
-          <CardHeader>
-            <CardTitle>Inventory Overview</CardTitle>
-            <CardDescription>Current cassava inventory by quality grade</CardDescription>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Items</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={qualityData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value }) => `${name}: ${value}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {qualityData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            <div className="text-2xl font-bold">{totalItems}</div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle>Inventory Summary</CardTitle>
-            <CardDescription>Quick overview of your current stock</CardDescription>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Quantity</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Total Inventory:</span>
-                <span className="text-lg font-bold">2,900 kg</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Grade A:</span>
-                <span className="text-lg font-bold">1,700 kg</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Grade B:</span>
-                <span className="text-lg font-bold">750 kg</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Grade C:</span>
-                <span className="text-lg font-bold">450 kg</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Reserved:</span>
-                <span className="text-lg font-bold">300 kg</span>
-              </div>
+            <div className="text-2xl font-bold">{totalQuantity} kg</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Average Price</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              ${inventory.length > 0 
+                ? (inventory.reduce((sum, item) => sum + item.product.price, 0) / inventory.length).toFixed(2) 
+                : '0.00'}
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Inventory by Category</CardTitle>
+            <CardDescription>Distribution of cassava products by category</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[250px]">
+              {categoryData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, value }) => `${name}: ${value}kg`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `${value} kg`} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <p className="text-muted-foreground">No inventory data available</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Items</CardTitle>
+            <CardDescription>Latest additions to your inventory</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
+              </div>
+            ) : inventory.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <p className="text-muted-foreground">No inventory items found</p>
+                <Button onClick={() => setShowAddForm(true)} className="mt-4">
+                  Add your first item
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {inventory.slice(0, 5).map((item) => (
+                  <div key={item.id} className="flex items-center justify-between space-x-4 rounded-lg border p-3">
+                    <div>
+                      <p className="font-medium">{item.product.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {item.quantity} kg | {item.warehouse.name}
+                      </p>
+                    </div>
+                    <div>${item.product.price.toFixed(2)}/kg</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -291,101 +382,116 @@ export default function FarmerInventoryPage() {
       <Card>
         <CardHeader>
           <CardTitle>Inventory Items</CardTitle>
-          <CardDescription>Detailed list of all cassava batches</CardDescription>
+          <CardDescription>Manage your current inventory stock</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Batch #</TableHead>
-                <TableHead>Quantity (kg)</TableHead>
-                <TableHead>Quality</TableHead>
-                <TableHead>Harvest Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {inventoryItems.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.batch}</TableCell>
-                  <TableCell>{item.quantity}</TableCell>
-                  <TableCell>{item.quality}</TableCell>
-                  <TableCell>{item.harvestDate}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        item.status === "Available"
-                          ? "bg-green-100 text-green-800"
-                          : item.status === "Reserved"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {item.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditClick(item)}
-                      >
-                        <Pencil className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteClick(item)}
-                      >
-                        <Trash className="h-4 w-4 mr-1" />
-                        Delete
-                      </Button>
-                    </div>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
+            </div>
+          ) : inventory.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <p className="text-muted-foreground">No inventory items found</p>
+              <Button onClick={() => setShowAddForm(true)} className="mt-4">
+                Add your first item
+              </Button>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Warehouse</TableHead>
+                  <TableHead>Quantity (kg)</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {inventory.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">{item.product.name}</TableCell>
+                    <TableCell>{item.product.category}</TableCell>
+                    <TableCell>{item.warehouse.name}</TableCell>
+                    <TableCell>{item.quantity}</TableCell>
+                    <TableCell>${item.product.price.toFixed(2)}/kg</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditClick(item)}
+                        className="text-amber-600 hover:text-amber-800 hover:bg-amber-100"
+                      >
+                        <Pencil className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteClick(item)}
+                        className="text-red-600 hover:text-red-800 hover:bg-red-100"
+                      >
+                        <Trash className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
+      {/* Edit Inventory Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Inventory Item</DialogTitle>
+            <DialogTitle>Edit Inventory</DialogTitle>
             <DialogDescription>
-              Update the quantity for this inventory item.
+              Update the quantity of this inventory item.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="quantity" className="text-right">
-                Quantity (kg)
-              </Label>
-              <Input
-                id="quantity"
-                type="number"
-                value={editForm.quantity}
-                onChange={(e) => setEditForm({...editForm, quantity: Number(e.target.value)})}
-                className="col-span-3"
-              />
+          {currentItem && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="product-name" className="text-right">
+                  Product
+                </Label>
+                <div className="col-span-3">
+                  <Input
+                    id="product-name"
+                    value={currentItem.product.name}
+                    disabled
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="inventory-quantity" className="text-right">
+                  Quantity (kg)
+                </Label>
+                <div className="col-span-3">
+                  <Input
+                    id="inventory-quantity"
+                    type="number"
+                    value={editForm.quantity}
+                    onChange={(e) => setEditForm({ ...editForm, quantity: Number(e.target.value) })}
+                    min={1}
+                  />
+                </div>
+              </div>
             </div>
-          </div>
+          )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)} className="text-gray-700 border-gray-300">
               Cancel
             </Button>
-            <Button onClick={handleEditSubmit}>
-              Save Changes
-            </Button>
+            <Button onClick={handleEditSubmit} className="bg-amber-600 hover:bg-amber-700">Save changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
@@ -395,11 +501,18 @@ export default function FarmerInventoryPage() {
               Are you sure you want to delete this inventory item? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
+          {currentItem && (
+            <div className="py-4">
+              <p><strong>Product:</strong> {currentItem.product.name}</p>
+              <p><strong>Quantity:</strong> {currentItem.quantity} kg</p>
+              <p><strong>Warehouse:</strong> {currentItem.warehouse.name}</p>
+            </div>
+          )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} className="text-gray-700 border-gray-300">
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteSubmit}>
+            <Button variant="destructive" onClick={handleDeleteSubmit} className="bg-red-600 hover:bg-red-700">
               Delete
             </Button>
           </DialogFooter>

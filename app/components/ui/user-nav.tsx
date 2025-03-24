@@ -37,7 +37,7 @@ export function UserNav() {
     // Clear user data
     clearUserData()
     // Redirect to login page
-    router.push("/auth/login")
+    router.push("/")
   }
   
   // Get initials for avatar fallback

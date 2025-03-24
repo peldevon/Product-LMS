@@ -1,8 +1,8 @@
-# Livestock Management System for Cassava (LMSC)
+# Logistics Management System for Cassava (LMSC)
 
 A comprehensive web application for managing the cassava supply chain from farm to factory.
 
-![LMSC Dashboard](./public/dashboard-preview.png)
+
 
 ## Overview
 
@@ -36,7 +36,7 @@ LMSC is a Next.js-based platform that connects farmers, processors, and transpor
 
 1. Clone the repository
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/peldevon/Product-LMS.git
    cd lmsc
    ```
 
@@ -74,9 +74,11 @@ Use these credentials to test the application:
 | Processor   | processor@cassava.com| processor123|
 | Transporter | transporter@cassava.com| transporter123|
 
-## Documentation
+## Repository
 
-For detailed documentation on the project setup, architecture, and usage, see [INSTRUCTIONS.txt](./INSTRUCTIONS.txt).
+The official repository for this project can be found at:
+[https://github.com/peldevon/Product-LMS.git](https://github.com/peldevon/Product-LMS.git)
+
 
 ## License
 

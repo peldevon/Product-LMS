@@ -16,7 +16,7 @@ export function Sidebar({ userRole }: SidebarProps) {
 
   const handleLogout = () => {
     clearUserData()
-    router.push("/auth/login")
+    router.push("/")
   }
 
   // Define navigation items based on user role

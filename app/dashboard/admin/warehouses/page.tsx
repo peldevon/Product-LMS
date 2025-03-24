@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { getWarehouses } from "@/app/actions/inventory"
 import { Eye, Settings } from "lucide-react"
@@ -7,7 +9,8 @@ import { toast } from "@/components/ui/use-toast"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { TableCell } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 type Warehouse = {
   id: number;
@@ -88,9 +91,139 @@ export default function AdminWarehousesPage() {
     }
   }
 
+  // Calculate total statistics
+  const totalCapacity = warehouses.reduce((sum, w) => sum + w.capacity, 0);
+  const totalUsed = warehouses.reduce((sum, w) => sum + w.used, 0);
+  const availableSpace = totalCapacity - totalUsed;
+  const utilizationRate = totalCapacity > 0 ? (totalUsed / totalCapacity) * 100 : 0;
+
   return (
-    <div>
-      {/* ... existing code ... */}
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold tracking-tight">Warehouse Management</h1>
+      
+      {/* Statistics */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Capacity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalCapacity} kg</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Used Space</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalUsed} kg</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Available Space</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{availableSpace} kg</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Utilization Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{Math.round(utilizationRate)}%</div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Warehouses Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Warehouses</CardTitle>
+          <CardDescription>
+            Manage your warehouse locations and capacities
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Capacity</TableHead>
+                  <TableHead>Used</TableHead>
+                  <TableHead>Available</TableHead>
+                  <TableHead>Utilization</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {warehouses.map((warehouse) => (
+                  <TableRow key={warehouse.id}>
+                    <TableCell className="font-medium">{warehouse.name}</TableCell>
+                    <TableCell>{warehouse.location}</TableCell>
+                    <TableCell>{warehouse.capacity} kg</TableCell>
+                    <TableCell>{warehouse.used} kg</TableCell>
+                    <TableCell>{warehouse.capacity - warehouse.used} kg</TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-full max-w-24 bg-gray-200 rounded-full h-2.5">
+                          <div
+                            className={`h-2.5 rounded-full ${
+                              (warehouse.used / warehouse.capacity) * 100 > 75
+                                ? "bg-red-500"
+                                : (warehouse.used / warehouse.capacity) * 100 > 50
+                                  ? "bg-yellow-500"
+                                  : "bg-green-500"
+                            }`}
+                            style={{
+                              width: `${Math.min(
+                                100,
+                                (warehouse.used / warehouse.capacity) * 100
+                              )}%`,
+                            }}
+                          ></div>
+                        </div>
+                        <span className="text-sm">
+                          {Math.round((warehouse.used / warehouse.capacity) * 100)}%
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleViewDetails(warehouse)}
+                        title="View Details"
+                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-100"
+                      >
+                        <Eye className="h-4 w-4" />
+                        <span className="sr-only">View Details</span>
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleManage(warehouse)}
+                        title="Manage Warehouse"
+                        className="text-amber-600 hover:text-amber-800 hover:bg-amber-100"
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span className="sr-only">Manage</span>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Warehouse Details Dialog */}
       {selectedWarehouse && (
@@ -184,12 +317,13 @@ export default function AdminWarehousesPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowManage(false)}>
+              <Button variant="outline" onClick={() => setShowManage(false)} className="text-gray-700 border-gray-300">
                 Cancel
               </Button>
               <Button 
                 onClick={handleManageSubmit}
                 disabled={manageForm.capacity < selectedWarehouse.used}
+                className="bg-green-600 hover:bg-green-700"
               >
                 Save Changes
               </Button>

@@ -142,7 +142,7 @@ export default function FarmerTransportationPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Transportation Management</h1>
+        <h1 className="text-2xl font-bold">Transportation Management</h1>
           <p className="text-muted-foreground">Manage your cassava transportation requests</p>
         </div>
         <Button onClick={() => setShowRequestForm(true)}>
@@ -157,12 +157,12 @@ export default function FarmerTransportationPage() {
           <TabsTrigger value="completed">Completed Shipments</TabsTrigger>
         </TabsList>
         <TabsContent value="active">
-          <Card>
-            <CardHeader>
+        <Card>
+          <CardHeader>
               <CardTitle>Active Transport Requests</CardTitle>
               <CardDescription>Requests that are scheduled or in transit</CardDescription>
-            </CardHeader>
-            <CardContent>
+          </CardHeader>
+          <CardContent>
               {loading ? (
                 <div className="flex justify-center p-4">
                   <p>Loading shipments...</p>
@@ -172,19 +172,19 @@ export default function FarmerTransportationPage() {
                   <p>No active transport requests found.</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
+          <Table>
+            <TableHeader>
+              <TableRow>
                       <TableHead>ID</TableHead>
                       <TableHead>From</TableHead>
                       <TableHead>To</TableHead>
-                      <TableHead>Quantity (kg)</TableHead>
+                <TableHead>Quantity (kg)</TableHead>
                       <TableHead>Dispatch Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
                     {activeShipments.map((shipment) => (
                       <TableRow key={shipment.id}>
                         <TableCell className="font-medium">{shipment.shipmentId}</TableCell>
@@ -192,7 +192,7 @@ export default function FarmerTransportationPage() {
                         <TableCell>{shipment.to}</TableCell>
                         <TableCell>{shipment.quantity}</TableCell>
                         <TableCell>{new Date(shipment.dispatchDate).toLocaleDateString()}</TableCell>
-                        <TableCell>
+                  <TableCell>
                           <Badge 
                             className={
                               shipment.status === "In Transit" 
@@ -201,8 +201,8 @@ export default function FarmerTransportationPage() {
                             }>
                             {shipment.status}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
+                  </TableCell>
+                  <TableCell>
                           <div className="flex items-center gap-2">
                             <Button
                               variant="outline"
@@ -210,8 +210,8 @@ export default function FarmerTransportationPage() {
                               onClick={() => handleViewDetails(shipment)}
                             >
                               <Eye className="h-4 w-4 mr-1" />
-                              View
-                            </Button>
+                        View
+                      </Button>
                             {shipment.status === "Scheduled" && (
                               <Button
                                 variant="destructive"
@@ -222,15 +222,15 @@ export default function FarmerTransportationPage() {
                                 }}
                               >
                                 <XCircle className="h-4 w-4 mr-1" />
-                                Cancel
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
               )}
             </CardContent>
           </Card>
@@ -291,8 +291,8 @@ export default function FarmerTransportationPage() {
                   </TableBody>
                 </Table>
               )}
-            </CardContent>
-          </Card>
+        </CardContent>
+      </Card>
         </TabsContent>
       </Tabs>
 
