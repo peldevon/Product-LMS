@@ -19,10 +19,8 @@ LMSC is a Next.js-based platform that connects farmers, processors, and transpor
 
 ## Tech Stack
 
-- **Frontend**: Next.js 13 App Router, React, TailwindCSS
-- **UI Components**: shadcn/ui component library
+- **Frontend**: Next.js App Router, React, TailwindCSS
 - **Database**: SQLite with Drizzle ORM
-- **State Management**: React Context and Hooks
 - **Data Visualization**: Recharts
 
 ## Getting Started
@@ -74,11 +72,9 @@ Use these credentials to test the application:
 | Processor   | processor@cassava.com| process123|
 | Transporter | transporter@cassava.com| transport123|
 
-## Repository
+## Documentation
 
-The official repository for this project can be found at:
-[https://github.com/peldevon/Product-LMS.git](https://github.com/peldevon/Product-LMS.git)
-
+For detailed documentation on the project setup, architecture, and usage, see [INSTRUCTIONS.txt](./INSTRUCTIONS.txt).
 
 ## License
 
