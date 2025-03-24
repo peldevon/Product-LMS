@@ -71,8 +71,8 @@ Use these credentials to test the application:
 |-------------|----------------------|------------|
 | Admin       | admin@cassava.com    | admin123   |
 | Farmer      | farmer@cassava.com   | farmer123  |
-| Processor   | processor@cassava.com| processor123|
-| Transporter | transporter@cassava.com| transporter123|
+| Processor   | processor@cassava.com| process123|
+| Transporter | transporter@cassava.com| transport123|
 
 ## Repository
 
